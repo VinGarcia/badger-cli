@@ -1,6 +1,10 @@
 version: '3'
 
 tasks:
+  default:
+    cmds:
+      - task run
+    silent: true
   run:
     cmds:
       - go build -o badger .

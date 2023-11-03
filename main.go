@@ -30,7 +30,6 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	var lines []string
 	for {
 		fmt.Printf("%s> ", baseFilename)
 		scanner.Scan()
@@ -43,18 +42,11 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-
-		lines = append(lines, line)
 	}
 
 	err = scanner.Err()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	fmt.Println("output:")
-	for _, l := range lines {
-		fmt.Println(l)
 	}
 }
 

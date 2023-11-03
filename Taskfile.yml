@@ -1,0 +1,8 @@
+version: '3'
+
+tasks:
+  run:
+    cmds:
+      - go build -o badger .
+      - ./badger foo.db
+    silent: true

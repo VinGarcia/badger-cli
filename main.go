@@ -35,6 +35,9 @@ func main() {
 		more := scanner.Scan()
 		line := strings.TrimLeft(scanner.Text(), "\t ")
 		if !more || strings.HasPrefix(line, "exit") {
+			// Add a \n so it looks better on the terminal
+			fmt.Println()
+
 			break
 		}
 
@@ -95,7 +98,7 @@ func runCommand(ctx context.Context, db badger.Client, line string) error {
 		}
 
 		for _, key := range keys {
-			fmt.Println(key)
+			fmt.Println("-", key)
 		}
 
 	case "find":
@@ -110,8 +113,17 @@ func runCommand(ctx context.Context, db badger.Client, line string) error {
 		}
 
 		for _, kv := range kvs {
-			fmt.Printf("%s: %s\n", kv.Key, kv.Value)
+			fmt.Printf("- %s: '%s'\n", kv.Key, kv.Value)
 		}
+
+	case "del", "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("missing <key>, usage: delete <key>")
+		}
+
+		key := args[1]
+		return db.Delete(ctx, key)
+
 	default:
 		return internal.ErrUnrecognizedCmd
 	}

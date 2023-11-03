@@ -116,7 +116,7 @@ func runCommand(ctx context.Context, db badger.Client, line string) error {
 			fmt.Printf("- %s: '%s'\n", kv.Key, kv.Value)
 		}
 
-	case "del", "delete":
+	case "del":
 		if len(args) < 2 {
 			return fmt.Errorf("missing <key>, usage: delete <key>")
 		}

@@ -32,10 +32,14 @@ func main() {
 
 	for {
 		fmt.Printf("%s> ", baseFilename)
-		scanner.Scan()
-		line := scanner.Text()
-		if len(line) == 0 {
+		more := scanner.Scan()
+		line := strings.TrimLeft(scanner.Text(), "\t ")
+		if !more || strings.HasPrefix(line, "exit") {
 			break
+		}
+
+		if line == "" {
+			continue
 		}
 
 		err := runCommand(ctx, db, line)

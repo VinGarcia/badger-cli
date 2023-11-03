@@ -56,25 +56,64 @@ func main() {
 
 func runCommand(ctx context.Context, db badger.Client, line string) error {
 	args := strings.SplitN(line, " ", 3)
-	if len(args) < 2 {
-		return internal.ErrUnrecognizedCmd
-	}
-
 	cmd := args[0]
-	key := args[1]
 	switch cmd {
 	case "get":
+		if len(args) < 2 {
+			return fmt.Errorf("missing <key>, usage: get <key>")
+		}
+
+		key := args[1]
 		value, err := db.Get(ctx, key)
 		if err != nil {
 			return err
 		}
 		fmt.Println(value)
 		return nil
+
 	case "set":
-		if len(args) < 3 {
-			return fmt.Errorf("missing third value")
+		if len(args) < 2 {
+			return fmt.Errorf("missing [key] and [value], usage: set <key> [value]")
 		}
-		return db.Set(ctx, key, args[2])
+
+		key := args[1]
+		value := ""
+		if len(args) >= 3 {
+			value = args[2]
+		}
+		return db.Set(ctx, key, value)
+
+	case "list":
+		prefix := ""
+		if len(args) >= 2 {
+			prefix = args[1]
+		}
+
+		keys, err := db.List(ctx, prefix)
+		if err != nil {
+			return err
+		}
+
+		for _, key := range keys {
+			fmt.Println(key)
+		}
+
+	case "find":
+		prefix := ""
+		if len(args) >= 2 {
+			prefix = args[1]
+		}
+
+		kvs, err := db.Find(ctx, prefix)
+		if err != nil {
+			return err
+		}
+
+		for _, kv := range kvs {
+			fmt.Printf("%s: %s\n", kv.Key, kv.Value)
+		}
+	default:
+		return internal.ErrUnrecognizedCmd
 	}
 	return nil
 }

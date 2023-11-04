@@ -7,6 +7,6 @@ tasks:
     silent: true
   run:
     cmds:
-      - go build -o badger .
-      - ./badger foo.db
+      - go build -o badger-cli .
+      - ./badger-cli foo.db
     silent: true

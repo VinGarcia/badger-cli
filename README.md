@@ -18,6 +18,17 @@ bar
 foo.db>
 ```
 
+## Installation
+
+You can install using the `go install` command:
+
+```bash
+go install github.com/vingarcia/badger-cli@latest
+```
+
+Which will install it on either `~/go/bin` or `$GOPATH/bin`, which you might need
+to add to your `PATH`.
+
 ## Supported Commands
 
 On the list below elements surrounded by `<>` are mandatory and

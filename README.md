@@ -6,10 +6,8 @@ This project was inspired on `redis-cli` so we will try to keep
 the behavior simillar, for instance using it is very simple:
 
 ```bash
-$ git clone https://github.com/vingarcia/badger-cli
-$ cd badger-cli
-$ go build -o badger .
-$ ./badger foo.db
+$ go install github.com/vingarcia/badger-cli@latest
+$ ./badger-cli foo.db
 foo.db> get foo
 record not found
 foo.db> set foo bar
@@ -39,5 +37,3 @@ elements surrounded by `[]` are optional:
 - `list [prefix]`: Lists all keys starting with `prefix`, if `prefix` is not passed lists all keys
 - `find [prefix]`: Finds all items starting with `prefix`, if `prefix` is not passed lists all values
 - `del <key>`: Deletes the target item
-
-

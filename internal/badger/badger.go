@@ -32,7 +32,13 @@ func New(
 	ctx context.Context,
 	// logger log.Provider,
 	filepath string,
+	password []byte,
 ) (Client, error) {
+	// An empty password is interpreted by badger as no password:
+	if password == nil {
+		password = []byte{}
+	}
+
 	db, err := badger.Open(
 		badger.DefaultOptions(filepath).
 
@@ -42,7 +48,10 @@ func New(
 
 			// The deffault value for logFileSize was 1GB, so by setting it
 			// to 100MB we expect it to use less disk space:
-			WithValueLogFileSize(100 * MB),
+			WithValueLogFileSize(100 * MB).
+			WithEncryptionKey(password).
+			// Using an index cache is recommended when using a password, so we always use a 50MB one:
+			WithIndexCacheSize(50 << 20),
 	)
 	if err != nil {
 		return Client{}, fmt.Errorf("unable to connect to badger on path '%s': %w", filepath, err)

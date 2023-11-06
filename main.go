@@ -4,28 +4,51 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/vingarcia/badger-cli/internal"
 	"github.com/vingarcia/badger-cli/internal/badger"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
 	ctx := context.Background()
 
-	if len(os.Args) <= 1 {
-		log.Fatalf("missing badger db filepath")
+	var filePath string
+	var password string
+	err := parseArgs(os.Args, map[any]arg{
+		1: arg{
+			Target: &filePath,
+			Desc:   "filepath to the database file",
+		},
+		"p": arg{
+			Target: &password,
+			Desc:   "specify the database password",
+		},
+		"password": arg{
+			Target: &password,
+			Desc:   "specify the database password",
+		},
+	})
+	if err != nil {
+		fmt.Printf("error parsing command line args: %s\n", err)
+		os.Exit(1)
 	}
 
-	filePath := os.Args[1]
+	if filePath == "" {
+		fmt.Println("missing badger db filepath")
+		os.Exit(1)
+	}
+
 	baseFilename := filepath.Base(filePath)
 
-	db, err := badger.New(ctx, filePath)
+	db, err := badger.New(ctx, filePath, []byte(password))
 	if err != nil {
-		log.Fatalf("error connecting to database: %s", err)
+		fmt.Printf("error connecting to database: %s\n", err)
+		os.Exit(1)
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -53,7 +76,8 @@ func main() {
 
 	err = scanner.Err()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("unexpected error parsing input: %s\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -127,5 +151,56 @@ func runCommand(ctx context.Context, db badger.Client, line string) error {
 	default:
 		return internal.ErrUnrecognizedCmd
 	}
+	return nil
+}
+
+type arg struct {
+	Target any
+	Desc   string
+}
+
+func parseArgs(args []string, config map[any]arg) error {
+	var numPosArgs int
+	for i := 0; i < len(args); i++ {
+		if args[i][0] != '-' {
+			c, found := config[numPosArgs]
+			numPosArgs++
+			if !found {
+				continue
+			}
+
+			err := yaml.Unmarshal([]byte(args[i]), c.Target)
+			if err != nil {
+				return fmt.Errorf("unable to parse cli arg on pos '%d' with value '%s': %w", i, args[i], err)
+			}
+
+			continue
+		}
+
+		key := strings.TrimLeft(args[i], "-")
+		if len(key) == 0 {
+			continue
+		}
+
+		t := reflect.TypeOf(config[key].Target)
+		fmt.Println("value of t", t, "key is:", key)
+		if t == nil || t.Kind() != reflect.Pointer {
+			return fmt.Errorf("code error: expected arg.Target to be a pointer but got: %v", t)
+		}
+
+		t = t.Elem()
+
+		value := "true"
+		if t.Kind() != reflect.Bool {
+			i++
+			value = args[i]
+		}
+
+		err := yaml.Unmarshal([]byte(value), config[key].Target)
+		if err != nil {
+			return fmt.Errorf("unable to parse cli arg '%s' with value '%s': %w", key, value, err)
+		}
+	}
+
 	return nil
 }

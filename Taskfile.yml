@@ -8,5 +8,10 @@ tasks:
   run:
     cmds:
       - go build -o badger-cli .
-      - ./badger-cli foo.db
+      - ./badger-cli -p password16bits00 withpass.db
+    silent: true
+  nopass:
+    cmds:
+      - go build -o badger-cli .
+      - ./badger-cli nopass.db
     silent: true

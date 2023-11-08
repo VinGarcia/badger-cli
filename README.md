@@ -7,13 +7,35 @@ the behavior simillar, for instance using it is very simple:
 
 ```bash
 $ go install github.com/vingarcia/badger-cli@latest
-$ ./badger-cli foo.db
-foo.db> get foo
+$ badger-cli some.db
+some.db> get foo
 record not found
-foo.db> set foo bar
-foo.db> get foo
+some.db> set foo bar
+some.db> get foo
 bar
-foo.db>
+some.db> list
+- foo
+- foo2
+some.db> exit
+```
+
+You can also open encrypted badger instances using the `-p` argument, e.g.:
+
+```bash
+badger-cli -p some_encrypted.db
+Password:
+some_encrypted.db> list
+- foo
+- foo2
+```
+
+You can also use a pipe for passing the password to `badger-cli`, but only on \*nix systems:
+
+```bash
+cat password_file.txt | badger-cli -p some_encrypted.db
+some_encrypted.db> list
+- foo
+- foo2
 ```
 
 ## Installation

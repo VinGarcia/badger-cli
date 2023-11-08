@@ -4,13 +4,17 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/vingarcia/badger-cli/internal"
 	"github.com/vingarcia/badger-cli/internal/badger"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,19 +22,15 @@ func main() {
 	ctx := context.Background()
 
 	var filePath string
-	var password string
+	var askPassword bool
 	err := parseArgs(os.Args, map[any]arg{
 		1: arg{
 			Target: &filePath,
 			Desc:   "filepath to the database file",
 		},
 		"p": arg{
-			Target: &password,
-			Desc:   "specify the database password",
-		},
-		"password": arg{
-			Target: &password,
-			Desc:   "specify the database password",
+			Target: &askPassword,
+			Desc:   "if set a password will be prompted",
 		},
 	})
 	if err != nil {
@@ -43,16 +43,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	var password []byte
+	if askPassword {
+		password, err = readPassword()
+		if err != nil {
+			fmt.Printf("error reading password: %s\n", err)
+			os.Exit(1)
+		}
+	}
+
 	baseFilename := filepath.Base(filePath)
 
-	db, err := badger.New(ctx, filePath, []byte(password))
+	db, err := badger.New(ctx, filePath, password)
 	if err != nil {
 		fmt.Printf("error connecting to database: %s\n", err)
 		os.Exit(1)
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
-
 	for {
 		fmt.Printf("%s> ", baseFilename)
 		more := scanner.Scan()
@@ -183,7 +191,6 @@ func parseArgs(args []string, config map[any]arg) error {
 		}
 
 		t := reflect.TypeOf(config[key].Target)
-		fmt.Println("value of t", t, "key is:", key)
 		if t == nil || t.Kind() != reflect.Pointer {
 			return fmt.Errorf("code error: expected arg.Target to be a pointer but got: %v", t)
 		}
@@ -203,4 +210,36 @@ func parseArgs(args []string, config map[any]arg) error {
 	}
 
 	return nil
+}
+
+func readPassword() ([]byte, error) {
+	// get the FileInfo struct describing the standard input.
+	fi, _ := os.Stdin.Stat()
+
+	// If stdin is a pipe:
+	if (fi.Mode() & os.ModeCharDevice) == 0 {
+		if runtime.GOOS == "windows" {
+			return nil, fmt.Errorf("badger-cli does not support reading the password from a pipe on Windows")
+		}
+
+		pass, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+
+		// This is necessary otherwise we can't read subsequent user's inputs
+		terminal, err := os.Open("/dev/tty")
+		os.Stdin = terminal
+
+		return pass, err
+	}
+
+	// If stdin comes from the terminal prompt the user for the password:
+	fmt.Print("Password: ")
+	pass, err := term.ReadPassword(int(syscall.Stdin))
+
+	// Force the cursor to move to the next line:
+	fmt.Println()
+
+	return pass, err
 }

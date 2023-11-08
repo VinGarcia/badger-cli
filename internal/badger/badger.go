@@ -39,6 +39,11 @@ func New(
 		password = []byte{}
 	}
 
+	pLen := len(password)
+	if pLen != 0 && pLen != 16 && pLen != 24 && pLen != 32 {
+		return Client{}, fmt.Errorf("badger password must be have either 16, 24 or 32 bytes")
+	}
+
 	db, err := badger.Open(
 		badger.DefaultOptions(filepath).
 
